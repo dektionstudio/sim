@@ -9,17 +9,18 @@ Use [Docker](/platform/self-hosting/docker) for a single node or [Kubernetes](/p
 
 ## Railway
 
-The [Sim deployment template](https://railway.com/new/template/sim-studio) provides a starting installation. Review its current services and variables before using it for production:
+The [Sim template](https://railway.com/deploy/sim-1) runs the same services as the Compose file: the app, the realtime server, PostgreSQL with pgvector, Redis, and a continuously running scheduler built from the `ghcr.io/simstudioai/cron` image, which calls the app over Railway's private network. All Sim images are pinned to one release, and migrations run as the realtime service's pre-deploy step. Before using it for production:
 
-1. Confirm PostgreSQL has pgvector and that migrations complete.
-2. Confirm the app and realtime services share `BETTER_AUTH_SECRET` and `INTERNAL_API_SECRET`.
-3. Retain generated secrets, set `API_ENCRYPTION_KEY`, and configure durable storage.
-4. Configure your domain under **Settings → Networking**. Set `NEXT_PUBLIC_APP_URL` and `BETTER_AUTH_URL` to that app origin; match `NEXT_PUBLIC_SOCKET_URL` to the realtime endpoint.
-5. Add a model provider key such as `OPENAI_API_KEY` and configure email if needed.
-6. Check Redis and the scheduler rather than assuming the template includes them.
+1. Keep the generated `BETTER_AUTH_SECRET`, `ENCRYPTION_KEY`, `API_ENCRYPTION_KEY` and `INTERNAL_API_SECRET`; the app and realtime services share them.
+2. Set `ALLOWED_LOGIN_EMAILS` to the addresses that may sign up. The template asks for yours at deploy.
+3. Configure your domain under **Settings → Networking**. Set `NEXT_PUBLIC_APP_URL` and `BETTER_AUTH_URL` to that app origin; match `NEXT_PUBLIC_SOCKET_URL` to the realtime endpoint.
+4. Add a model provider key such as `OPENAI_API_KEY` and configure email if needed.
+5. Uploads go to a volume on the app service. Move them to [object storage](/platform/self-hosting/object-storage) before running more than one app replica.
+
+The app needs more than 1 GB of memory once workflows run, so use a Railway Hobby plan or higher.
 
 <Callout type="warn">
-  Railway Cron Jobs run no more often than every five minutes. They cannot reproduce Sim's bundled minute-level scheduler cadence. Use a continuously running Sim scheduler service or another scheduler supporting the schedules in [Background jobs](/platform/self-hosting/background-jobs). See [Railway's cron requirements](https://docs.railway.com/cron-jobs).
+  Railway Cron Jobs run no more often than every five minutes. They cannot reproduce Sim's bundled minute-level scheduler cadence. The template above runs the scheduler as a regular service instead. If you deploy without it, use a continuously running Sim scheduler service or another scheduler supporting the schedules in [Background jobs](/platform/self-hosting/background-jobs). See [Railway's cron requirements](https://docs.railway.com/cron-jobs).
 </Callout>
 
 ## VPS
